@@ -88,7 +88,7 @@ Dodaj do pliku konfiguracyjnego Claude Desktop (`claude_desktop_config.json`):
   "mcpServers": {
     "bdl-api": {
       "command": "python",
-      "args": ["/ścieżka/do/bdl-mcp-server/server.py"]
+      "args": ["/ścieżka/do/mcp-server/server.py"]
     }
   }
 }
@@ -103,7 +103,7 @@ Lub z wykorzystaniem `uv`:
       "command": "uv",
       "args": [
         "--directory",
-        "/ścieżka/do/bdl-mcp-server",
+        "/ścieżka/do/mcp-server",
         "run",
         "server.py"
       ]
@@ -165,12 +165,10 @@ API BDL ma limity zapytań (rate limiting). Informacje o limitach są zwracane w
 ## Dokumentacja API BDL
 
 Pełna dokumentacja API BDL dostępna jest pod adresem:
-https://bdl.stat.gov.pl/api/v1/doc
+https://api.stat.gov.pl/Home/BdlApi
 
 ## Licencja
 
-MIT License
+GNU GENERAL PUBLIC LICENSE
 
-## Autor
-
-Wygenerowano na podstawie specyfikacji OpenAPI BDL API.
+Stworzono na podstawie specyfikacji OpenAPI BDL API.
