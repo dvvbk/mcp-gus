@@ -1,0 +1,135 @@
+### Health Check
+GET https://mcp-gus-workers.YOUR_SUBDOMAIN.workers.dev/health
+
+### Initialize MCP
+POST https://mcp-gus-workers.YOUR_SUBDOMAIN.workers.dev/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "test-client",
+      "version": "1.0.0"
+    }
+  }
+}
+
+### List Tools
+POST https://mcp-gus-workers.YOUR_SUBDOMAIN.workers.dev/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list",
+  "params": {}
+}
+
+### Get Aggregates
+POST https://mcp-gus-workers.YOUR_SUBDOMAIN.workers.dev/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "get_aggregates",
+    "arguments": {
+      "lang": "pl"
+    }
+  }
+}
+
+### Get Subjects (Categories)
+POST https://mcp-gus-workers.YOUR_SUBDOMAIN.workers.dev/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "name": "get_subjects",
+    "arguments": {
+      "lang": "pl"
+    }
+  }
+}
+
+### Get Voivodeships (Województwa)
+POST https://mcp-gus-workers.YOUR_SUBDOMAIN.workers.dev/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "name": "get_units",
+    "arguments": {
+      "level": 2,
+      "lang": "pl"
+    }
+  }
+}
+
+### Search for Warsaw
+POST https://mcp-gus-workers.YOUR_SUBDOMAIN.workers.dev/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "name": "search_units",
+    "arguments": {
+      "name": "Warszawa",
+      "lang": "pl"
+    }
+  }
+}
+
+### Get Variables for Population Subject
+POST https://mcp-gus-workers.YOUR_SUBDOMAIN.workers.dev/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "tools/call",
+  "params": {
+    "name": "get_variables",
+    "arguments": {
+      "subject_id": "P2425",
+      "lang": "pl"
+    }
+  }
+}
+
+### Get Data for Population Variable
+POST https://mcp-gus-workers.YOUR_SUBDOMAIN.workers.dev/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 8,
+  "method": "tools/call",
+  "params": {
+    "name": "get_data_by_variable",
+    "arguments": {
+      "var_id": 60559,
+      "unit_id": "000000000000",
+      "year": [2023],
+      "lang": "pl"
+    }
+  }
+}
+
+###

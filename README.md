@@ -2,6 +2,26 @@
 
 Serwer MCP (Model Context Protocol) dla API BDL (Bank Danych Lokalnych) - publicznego API GUS (Główny Urząd Statystyczny) udostępniającego dane statystyczne o Polsce.
 
+## 🚀 Deployment Options
+
+Ten projekt oferuje **3 sposoby deploymentu**:
+
+1. **🐍 Python (stdio/SSE)** - Lokalnie przez Claude Desktop lub jako serwer HTTP
+   - Dla desktop MCP (stdio)
+   - Dla hostowania SSE (Server-Sent Events)
+   - Zobacz: główna dokumentacja poniżej
+
+2. **☁️ Cloudflare Workers (TypeScript)** - Globalny edge deployment
+   - 300+ lokalizacji na świecie
+   - Darmowy tier: 100k requestów/dzień
+   - Zero maintenance, auto-scaling
+   - 👉 **[README-CLOUDFLARE-WORKERS.md](README-CLOUDFLARE-WORKERS.md)**
+
+3. **🐋 Docker** - Konteneryzacja (Alpine/Debian)
+   - Portable deployment
+   - Alpine: 50-80 MB
+   - Zobacz: [DEPLOYMENT.md](DEPLOYMENT.md)
+
 ## Opis
 
 Ten serwer MCP umożliwia dostęp do danych statystycznych GUS poprzez protokół MCP. Dzięki temu modele językowe (LLM) mogą bezpośrednio pobierać i analizować dane statystyczne o Polsce.

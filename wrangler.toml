@@ -1,0 +1,42 @@
+# Cloudflare Workers configuration
+name = "mcp-gus-workers"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Account info (fill in after `wrangler login`)
+# account_id = "YOUR_ACCOUNT_ID"
+
+# Workers configuration
+workers_dev = true
+
+# Routes (uncomment for custom domain)
+# routes = [
+#   { pattern = "mcp.your-domain.com/*", zone_name = "your-domain.com" }
+# ]
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+
+# KV namespaces for session storage (optional)
+# [[kv_namespaces]]
+# binding = "MCP_SESSIONS"
+# id = "YOUR_KV_NAMESPACE_ID"
+
+# Durable Objects for stateful connections (optional, for advanced use)
+# [[durable_objects.bindings]]
+# name = "MCP_CONNECTION"
+# class_name = "MCPConnection"
+
+# Limits
+[limits]
+cpu_ms = 50
+
+# Build configuration
+[build]
+command = "npm install && npm run build"
+
+# Deployment configuration
+[build.upload]
+format = "service-worker"
