@@ -1,0 +1,56 @@
+#!/sbin/openrc-run
+# OpenRC service script dla BDL MCP Server (Alpine Linux)
+# Instalacja: sudo cp bdl-mcp-server.openrc /etc/init.d/bdl-mcp-server
+
+name="BDL MCP Server"
+description="GUS Statistics API MCP Server"
+
+# Konfiguracja - DOSTOSUJ DO SWOICH POTRZEB
+: ${BDL_USER:="mcp"}
+: ${BDL_GROUP:="mcp"}
+: ${BDL_DIR:="/opt/mcp-gus"}
+: ${BDL_HOST:="0.0.0.0"}
+: ${BDL_PORT:="8000"}
+: ${BDL_LOG:="/var/log/bdl-mcp-server.log"}
+: ${BDL_PIDFILE:="/var/run/bdl-mcp-server.pid"}
+
+command="/usr/bin/env"
+command_args="uv run ${BDL_DIR}/server.py --transport sse --host ${BDL_HOST} --port ${BDL_PORT}"
+command_user="${BDL_USER}:${BDL_GROUP}"
+command_background="yes"
+pidfile="${BDL_PIDFILE}"
+
+output_log="${BDL_LOG}"
+error_log="${BDL_LOG}"
+
+depend() {
+    need net
+    after firewall
+}
+
+start_pre() {
+    # Sprawdź czy katalog istnieje
+    if [ ! -d "${BDL_DIR}" ]; then
+        eerror "Directory ${BDL_DIR} does not exist"
+        return 1
+    fi
+
+    # Sprawdź czy użytkownik istnieje
+    if ! getent passwd "${BDL_USER}" > /dev/null 2>&1; then
+        eerror "User ${BDL_USER} does not exist"
+        return 1
+    fi
+
+    # Stwórz katalog dla PID jeśli nie istnieje
+    checkpath --directory --owner ${BDL_USER}:${BDL_GROUP} --mode 0755 \
+        $(dirname ${BDL_PIDFILE})
+
+    # Stwórz plik logu jeśli nie istnieje
+    checkpath --file --owner ${BDL_USER}:${BDL_GROUP} --mode 0644 \
+        ${BDL_LOG}
+}
+
+stop_post() {
+    # Usuń PID file po zatrzymaniu
+    [ -f "${BDL_PIDFILE}" ] && rm -f "${BDL_PIDFILE}"
+}

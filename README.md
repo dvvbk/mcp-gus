@@ -148,20 +148,45 @@ Po uruchomieniu w trybie SSE, serwer będzie dostępny pod adresem:
 Możesz również uruchomić serwer w kontenerze Docker:
 
 ```bash
-# Zbuduj obraz
+# Standard (Debian-based)
 docker build -t bdl-mcp-server .
-
-# Uruchom kontener
 docker run -p 8000:8000 bdl-mcp-server
+
+# Alpine (6x mniejszy obraz)
+docker build -f Dockerfile.alpine -t bdl-mcp-server:alpine .
+docker run -p 8000:8000 bdl-mcp-server:alpine
 ```
 
 Lub użyj docker-compose:
 
 ```bash
+# Standard
 docker-compose up -d
+
+# Alpine
+docker-compose -f docker-compose.alpine.yml up -d
 ```
 
 Serwer będzie dostępny pod adresem `http://localhost:8000`
+
+### Uruchomienie na Alpine Linux (OpenRC)
+
+Dla Alpine Linux przygotowano dedykowany skrypt instalacyjny:
+
+```bash
+# Automatyczna instalacja jako usługa systemowa
+sudo sh setup-alpine.sh
+
+# Zarządzanie
+rc-service bdl-mcp-server start
+rc-service bdl-mcp-server stop
+rc-service bdl-mcp-server status
+
+# Logi
+tail -f /var/log/bdl-mcp-server.log
+```
+
+Zobacz **DEPLOYMENT.md** dla szczegółów o Alpine Linux.
 
 ### Konfiguracja w Claude Desktop
 

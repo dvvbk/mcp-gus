@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  bdl-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.alpine
+    container_name: bdl-mcp-server-alpine
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/sse"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Opcjonalne limity zasobów
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M

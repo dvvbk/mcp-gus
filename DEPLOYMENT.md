@@ -2,6 +2,12 @@
 
 Ten dokument opisuje różne sposoby deploymentu serwera BDL MCP w trybie SSE.
 
+## Wybór Systemu
+
+- **Ubuntu/Debian/RHEL/CentOS** → systemd (sekcja 2)
+- **Alpine Linux** → OpenRC (sekcja Alpine poniżej)
+- **Dowolny system** → Docker (sekcja 3) lub nohup (sekcja 1)
+
 ## Szybki Start
 
 ### Uruchomienie w tle (uv)
@@ -343,3 +349,229 @@ tar -xzf bdl-mcp-backup.tar.gz
 chmod +x *.sh
 ./run_sse_uv.sh
 ```
+
+---
+
+## Alpine Linux (OpenRC)
+
+Alpine Linux używa OpenRC jako system init zamiast systemd.
+
+### Automatyczna Instalacja
+
+**Najszybszy sposób - użyj skryptu instalacyjnego:**
+
+```bash
+# Pobierz wszystkie potrzebne pliki
+# (zakładając że jesteś w katalogu projektu)
+
+# Uruchom instalację (wymaga root)
+sudo sh setup-alpine.sh
+
+# Serwer zostanie automatycznie zainstalowany i uruchomiony!
+```
+
+Skrypt wykonuje:
+1. ✓ Instaluje wymagane pakiety (python3, gcc, musl-dev, itp.)
+2. ✓ Instaluje uv (jeśli nie ma)
+3. ✓ Tworzy użytkownika systemowego `mcp`
+4. ✓ Kopiuje pliki do `/opt/mcp-gus`
+5. ✓ Instaluje zależności Python
+6. ✓ Konfiguruje usługę OpenRC
+7. ✓ Uruchamia serwer
+
+### Ręczna Instalacja (OpenRC)
+
+Jeśli wolisz ręczną instalację:
+
+**1. Zainstaluj zależności systemowe:**
+
+```bash
+# Podstawowe pakiety
+apk add --no-cache \
+    python3 \
+    py3-pip \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    openssl-dev
+
+# Zainstaluj uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**2. Przygotuj użytkownika i katalog:**
+
+```bash
+# Stwórz użytkownika systemowego
+addgroup -S mcp
+adduser -S -D -h /home/mcp -s /sbin/nologin -G mcp mcp
+
+# Stwórz katalog aplikacji
+mkdir -p /opt/mcp-gus
+cp server.py requirements.txt pyproject.toml /opt/mcp-gus/
+chown -R mcp:mcp /opt/mcp-gus
+
+# Zainstaluj zależności
+cd /opt/mcp-gus
+uv venv
+uv pip install -r requirements.txt
+```
+
+**3. Zainstaluj usługę OpenRC:**
+
+```bash
+# Skopiuj plik service
+cp bdl-mcp-server.openrc /etc/init.d/bdl-mcp-server
+chmod +x /etc/init.d/bdl-mcp-server
+
+# Stwórz plik konfiguracyjny (opcjonalnie)
+cat > /etc/conf.d/bdl-mcp-server <<EOF
+BDL_USER="mcp"
+BDL_GROUP="mcp"
+BDL_DIR="/opt/mcp-gus"
+BDL_HOST="0.0.0.0"
+BDL_PORT="8000"
+BDL_LOG="/var/log/bdl-mcp-server.log"
+EOF
+
+# Dodaj do autostartu
+rc-update add bdl-mcp-server default
+
+# Uruchom
+rc-service bdl-mcp-server start
+```
+
+### Zarządzanie usługą (OpenRC)
+
+```bash
+# Start
+rc-service bdl-mcp-server start
+
+# Stop
+rc-service bdl-mcp-server stop
+
+# Restart
+rc-service bdl-mcp-server restart
+
+# Status
+rc-service bdl-mcp-server status
+
+# Logi
+tail -f /var/log/bdl-mcp-server.log
+
+# Usuń z autostartu
+rc-update del bdl-mcp-server default
+
+# Dodaj do autostartu
+rc-update add bdl-mcp-server default
+```
+
+### Docker na Alpine
+
+Alpine Linux jest również świetnym wyborem dla kontenerów Docker (mniejszy rozmiar):
+
+```bash
+# Użyj Alpine-specific Dockerfile
+docker build -f Dockerfile.alpine -t bdl-mcp-server:alpine .
+
+# Uruchom
+docker run -d -p 8000:8000 --name bdl-mcp bdl-mcp-server:alpine
+
+# Lub przez docker-compose
+docker-compose -f docker-compose.alpine.yml up -d
+```
+
+Porównanie rozmiarów obrazów:
+- **Debian/Ubuntu base**: ~300-500 MB
+- **Alpine base**: ~50-80 MB (6x mniejszy!)
+
+### Konfiguracja OpenRC
+
+Edytuj `/etc/conf.d/bdl-mcp-server` aby zmienić ustawienia:
+
+```bash
+# Zmień port
+BDL_PORT="9000"
+
+# Zmień host (tylko localhost)
+BDL_HOST="127.0.0.1"
+
+# Inna ścieżka do logów
+BDL_LOG="/var/log/mcp/server.log"
+
+# Restart aby zastosować zmiany
+rc-service bdl-mcp-server restart
+```
+
+### Alpine-specific Troubleshooting
+
+**Problem: "musl libc" incompatibility**
+
+Niektóre pakiety Python mogą wymagać kompilacji na Alpine:
+
+```bash
+apk add --no-cache gcc musl-dev libffi-dev openssl-dev
+```
+
+**Problem: brak "bash"**
+
+Alpine używa `sh` (BusyBox) zamiast `bash`. Skrypty `.sh` w projekcie są kompatybilne z POSIX sh.
+
+Jeśli potrzebujesz bash:
+```bash
+apk add --no-cache bash
+```
+
+**Problem: "rc-service: command not found"**
+
+Upewnij się że używasz Alpine z OpenRC (standardowa wersja):
+```bash
+apk add --no-cache openrc
+```
+
+### Firewall na Alpine (awall)
+
+Alpine używa `awall` jako frontend do iptables:
+
+```bash
+# Zainstaluj awall
+apk add --no-cache awall iptables ip6tables
+
+# Dodaj regułę dla portu 8000
+cat > /etc/awall/optional/bdl-mcp.json <<EOF
+{
+  "description": "BDL MCP Server",
+  "filter": [
+    {
+      "in": "eth0",
+      "service": { "proto": "tcp", "port": 8000 },
+      "action": "accept"
+    }
+  ]
+}
+EOF
+
+# Włącz regułę
+awall enable bdl-mcp
+awall activate
+
+# Zapisz na stałe
+rc-update add iptables
+/etc/init.d/iptables save
+```
+
+### Performance na Alpine
+
+Alpine jest bardzo lekki - świetnie nadaje się do małych VPS/kontenerów:
+
+**Rekomendowane minimum:**
+- CPU: 1 core (shared)
+- RAM: 256 MB
+- Disk: 100 MB
+
+**Dla produkcji:**
+- CPU: 2+ cores
+- RAM: 512 MB - 1 GB
+- Disk: 500 MB
+
+---
