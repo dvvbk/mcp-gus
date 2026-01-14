@@ -6,6 +6,7 @@ GUS (Statistics Poland) API
 This server provides access to Polish statistical data through the Model Context Protocol.
 """
 
+import argparse
 import asyncio
 import json
 import logging
@@ -15,6 +16,9 @@ from urllib.parse import urlencode
 import httpx
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
+from mcp.server.sse import SseServerTransport
+from starlette.applications import Starlette
+from starlette.routing import Route
 from mcp.types import (
     Tool,
     TextContent,
@@ -960,10 +964,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 # Main Entry Point
 # ============================================================================
 
-async def main():
-    """Run the MCP server"""
-    logger.info("Starting BDL MCP Server...")
-    
+async def main_stdio():
+    """Run the MCP server with stdio transport"""
+    logger.info("Starting BDL MCP Server (stdio)...")
+
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,
@@ -972,5 +976,91 @@ async def main():
         )
 
 
+async def handle_sse(request):
+    """Handle SSE requests"""
+    async with SseServerTransport("/messages") as (read_stream, write_stream):
+        await server.run(
+            read_stream,
+            write_stream,
+            server.create_initialization_options()
+        )
+
+
+async def handle_messages(request):
+    """Handle message endpoint for SSE"""
+    async with SseServerTransport("/messages") as (read_stream, write_stream):
+        await server.run(
+            read_stream,
+            write_stream,
+            server.create_initialization_options(),
+            request.scope
+        )
+
+
+def create_sse_app():
+    """Create Starlette app for SSE transport"""
+    sse = SseServerTransport("/messages")
+
+    async def handle_sse_endpoint(request):
+        async with sse.connect_sse(
+            request.scope, request.receive, request._send
+        ) as streams:
+            await server.run(
+                streams[0], streams[1], server.create_initialization_options()
+            )
+        return None
+
+    async def handle_messages_endpoint(request):
+        async with sse.connect_messages(
+            request.receive, request._send
+        ) as streams:
+            await server.run(
+                streams[0], streams[1], server.create_initialization_options()
+            )
+        return None
+
+    return Starlette(
+        debug=True,
+        routes=[
+            Route("/sse", endpoint=handle_sse_endpoint),
+            Route("/messages", endpoint=handle_messages_endpoint, methods=["POST"]),
+        ],
+    )
+
+
+def main():
+    """Main entry point with argument parsing"""
+    parser = argparse.ArgumentParser(
+        description="BDL MCP Server - Access to Polish statistical data"
+    )
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse"],
+        default="stdio",
+        help="Transport type (default: stdio)",
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host to bind to for SSE transport (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind to for SSE transport (default: 8000)",
+    )
+
+    args = parser.parse_args()
+
+    if args.transport == "stdio":
+        asyncio.run(main_stdio())
+    else:
+        import uvicorn
+        logger.info(f"Starting BDL MCP Server (SSE) on {args.host}:{args.port}...")
+        app = create_sse_app()
+        uvicorn.run(app, host=args.host, port=args.port)
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

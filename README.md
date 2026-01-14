@@ -69,11 +69,59 @@ pip install mcp httpx
 
 ## Uruchomienie
 
-### Bezpośrednie uruchomienie
+Serwer może być uruchomiony w dwóch trybach:
+- **stdio** - Komunikacja przez standardowe wejście/wyjście (domyślnie, do użycia z Claude Desktop)
+- **sse** - Serwer HTTP z obsługą Server-Sent Events (do hostowania)
+
+### Tryb stdio (domyślny)
 
 ```bash
 python server.py
+# lub z jawnym określeniem trybu:
+python server.py --transport stdio
 ```
+
+### Tryb SSE (hostowanie HTTP)
+
+```bash
+python server.py --transport sse --host 0.0.0.0 --port 8000
+```
+
+Lub użyj skryptu pomocniczego:
+
+```bash
+./run_sse.sh              # uruchomi na localhost:8000
+./run_sse.sh 0.0.0.0 8080 # uruchomi na 0.0.0.0:8080
+```
+
+Parametry:
+- `--transport` - Typ transportu: `stdio` lub `sse` (domyślnie: `stdio`)
+- `--host` - Host do nasłuchiwania (domyślnie: `127.0.0.1`)
+- `--port` - Port do nasłuchiwania (domyślnie: `8000`)
+
+Po uruchomieniu w trybie SSE, serwer będzie dostępny pod adresem:
+- **SSE endpoint**: `http://host:port/sse`
+- **Messages endpoint**: `http://host:port/messages`
+
+### Uruchomienie w Docker
+
+Możesz również uruchomić serwer w kontenerze Docker:
+
+```bash
+# Zbuduj obraz
+docker build -t bdl-mcp-server .
+
+# Uruchom kontener
+docker run -p 8000:8000 bdl-mcp-server
+```
+
+Lub użyj docker-compose:
+
+```bash
+docker-compose up -d
+```
+
+Serwer będzie dostępny pod adresem `http://localhost:8000`
 
 ### Konfiguracja w Claude Desktop
 
@@ -110,6 +158,30 @@ Lub z wykorzystaniem `uv`:
     }
   }
 }
+```
+
+### Łączenie z serwerem SSE
+
+Jeśli uruchomiłeś serwer w trybie SSE, możesz połączyć się z nim używając klienta MCP z obsługą SSE:
+
+```python
+from mcp.client.sse import sse_client
+
+async with sse_client("http://localhost:8000") as (read, write):
+    # Komunikacja z serwerem
+    pass
+```
+
+Lub z użyciem curl do testowania endpointów:
+
+```bash
+# Endpoint SSE (do otrzymywania eventów)
+curl -N http://localhost:8000/sse
+
+# Endpoint messages (do wysyłania wiadomości)
+curl -X POST http://localhost:8000/messages \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
 ## Przykłady użycia
