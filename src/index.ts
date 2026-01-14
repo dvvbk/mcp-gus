@@ -221,10 +221,17 @@ async function handleToolCall(name: string, arguments_: any): Promise<any> {
 }
 
 /**
- * Handle MCP protocol requests
+ * Handle MCP protocol requests and notifications
  */
 async function handleMCPRequest(request: any): Promise<any> {
-  const { method, params } = request;
+  const { method, params, id } = request;
+
+  // Handle notifications (no response needed)
+  if (id === undefined || method?.startsWith('notifications/')) {
+    // Notifications like 'notifications/initialized', 'notifications/cancelled'
+    // Just acknowledge them silently
+    return null;
+  }
 
   switch (method) {
     case 'initialize':
@@ -346,13 +353,22 @@ export default {
       );
     }
 
-    // MCP endpoint - POST handles requests
+    // MCP endpoint - POST handles requests and notifications
     if (url.pathname === '/mcp' && request.method === 'POST') {
       try {
         const body = await request.json<any>();
 
         const response = await handleMCPRequest(body);
 
+        // Notifications (no id) don't require a response
+        if (response === null) {
+          return new Response(null, {
+            status: 204, // No Content
+            headers: CORS_HEADERS,
+          });
+        }
+
+        // Regular requests return JSON-RPC response
         return new Response(
           JSON.stringify({
             jsonrpc: '2.0',
