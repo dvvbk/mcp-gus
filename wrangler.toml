@@ -1,14 +1,11 @@
 # Cloudflare Workers configuration
 name = "mcp-gus-workers"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-01-14"
 compatibility_flags = ["nodejs_compat"]
 
 # Account info (fill in after `wrangler login`)
 # account_id = "YOUR_ACCOUNT_ID"
-
-# Workers configuration
-workers_dev = true
 
 # Routes (uncomment for custom domain)
 # routes = [
@@ -33,10 +30,6 @@ ENVIRONMENT = "production"
 [limits]
 cpu_ms = 50
 
-# Build configuration
-[build]
-command = "npm install && npm run build"
-
-# Deployment configuration
-[build.upload]
-format = "service-worker"
+# Observability (optional)
+[observability]
+enabled = true
