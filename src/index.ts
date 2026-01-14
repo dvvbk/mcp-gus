@@ -293,7 +293,60 @@ export default {
       );
     }
 
-    // MCP endpoint
+    // MCP endpoint - GET shows instructions
+    if (url.pathname === '/mcp' && request.method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          service: 'BDL MCP Server',
+          version: '0.1.0',
+          protocol: 'MCP over HTTP (JSON-RPC 2.0)',
+          endpoint: '/mcp',
+          method: 'POST',
+          description: 'Model Context Protocol server for Polish statistical data (GUS BDL API)',
+          usage: {
+            initialize: {
+              method: 'initialize',
+              params: {
+                protocolVersion: '2024-11-05',
+                capabilities: {},
+                clientInfo: { name: 'client', version: '1.0.0' },
+              },
+            },
+            listTools: {
+              method: 'tools/list',
+              params: {},
+            },
+            callTool: {
+              method: 'tools/call',
+              params: {
+                name: 'get_units',
+                arguments: { level: 2, lang: 'pl' },
+              },
+            },
+          },
+          example: {
+            url: url.origin + '/mcp',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+              jsonrpc: '2.0',
+              id: 1,
+              method: 'tools/list',
+              params: {},
+            },
+          },
+          documentation: 'https://github.com/dvvbk/mcp-gus',
+        }, null, 2),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS,
+          },
+        }
+      );
+    }
+
+    // MCP endpoint - POST handles requests
     if (url.pathname === '/mcp' && request.method === 'POST') {
       try {
         const body = await request.json<any>();
