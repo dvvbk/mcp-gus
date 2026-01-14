@@ -976,56 +976,37 @@ async def main_stdio():
         )
 
 
-async def handle_sse(request):
-    """Handle SSE requests"""
-    async with SseServerTransport("/messages") as (read_stream, write_stream):
-        await server.run(
-            read_stream,
-            write_stream,
-            server.create_initialization_options()
-        )
-
-
-async def handle_messages(request):
-    """Handle message endpoint for SSE"""
-    async with SseServerTransport("/messages") as (read_stream, write_stream):
-        await server.run(
-            read_stream,
-            write_stream,
-            server.create_initialization_options(),
-            request.scope
-        )
-
-
 def create_sse_app():
     """Create Starlette app for SSE transport"""
-    sse = SseServerTransport("/messages")
+    sse_transport = SseServerTransport("/messages")
 
-    async def handle_sse_endpoint(request):
-        async with sse.connect_sse(
-            request.scope, request.receive, request._send
-        ) as streams:
+    async def handle_sse(scope, receive, send):
+        """Handle SSE endpoint"""
+        async with sse_transport.connect_sse(scope, receive, send) as streams:
             await server.run(
-                streams[0], streams[1], server.create_initialization_options()
+                streams[0],
+                streams[1],
+                server.create_initialization_options()
             )
-        return None
 
-    async def handle_messages_endpoint(request):
-        async with sse.connect_messages(
-            request.receive, request._send
-        ) as streams:
+    async def handle_messages(scope, receive, send):
+        """Handle messages endpoint"""
+        async with sse_transport.connect_messages(receive, send) as streams:
             await server.run(
-                streams[0], streams[1], server.create_initialization_options()
+                streams[0],
+                streams[1],
+                server.create_initialization_options()
             )
-        return None
 
-    return Starlette(
+    app = Starlette(
         debug=True,
         routes=[
-            Route("/sse", endpoint=handle_sse_endpoint),
-            Route("/messages", endpoint=handle_messages_endpoint, methods=["POST"]),
+            Route("/sse", endpoint=handle_sse),
+            Route("/messages", endpoint=handle_messages, methods=["POST"]),
         ],
     )
+
+    return app
 
 
 def main():
