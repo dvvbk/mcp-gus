@@ -992,8 +992,30 @@ def create_sse_app():
             "transport": "sse"
         })
 
+    async def handle_sse_test(request: Request):
+        """Test SSE endpoint - sprawdza czy SSE działa przez proxy/tunnel"""
+        from starlette.responses import StreamingResponse
+        import asyncio
+
+        async def event_generator():
+            """Generuje test events co sekundę"""
+            for i in range(10):
+                yield f"data: Test event {i} at {asyncio.get_event_loop().time()}\n\n"
+                await asyncio.sleep(1)
+            yield "data: SSE test completed successfully!\n\n"
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",  # Wyłącz buforowanie w nginx
+            }
+        )
+
     async def handle_sse(request: Request):
-        """Handle SSE endpoint"""
+        """Handle SSE endpoint - MCP protocol"""
         async with sse_transport.connect_sse(
             request.scope,
             request.receive,
