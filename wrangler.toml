@@ -26,10 +26,6 @@ ENVIRONMENT = "production"
 # name = "MCP_CONNECTION"
 # class_name = "MCPConnection"
 
-# Limits
-[limits]
-cpu_ms = 50
-
 # Observability (optional)
 [observability]
 enabled = true
