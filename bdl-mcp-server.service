@@ -1,0 +1,30 @@
+[Unit]
+Description=BDL MCP Server - GUS Statistics API
+After=network.target
+Documentation=https://github.com/dvvbk/mcp-gus
+
+[Service]
+Type=simple
+User=%i
+Group=%i
+WorkingDirectory=/path/to/mcp-gus
+Environment="PATH=/path/to/.local/bin:/usr/bin:/bin"
+
+# Uruchom przez uv
+ExecStart=/usr/bin/env uv run server.py --transport sse --host 0.0.0.0 --port 8000
+
+# Restart w przypadku awarii
+Restart=on-failure
+RestartSec=10
+
+# Logowanie
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bdl-mcp-server
+
+# Bezpieczeństwo
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

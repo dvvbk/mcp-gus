@@ -205,3 +205,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# MCP Server runtime files
+mcp-server.pid
+mcp-server.log

@@ -83,6 +83,8 @@ python server.py --transport stdio
 
 ### Tryb SSE (hostowanie HTTP)
 
+**Uruchomienie na pierwszym planie:**
+
 ```bash
 python server.py --transport sse --host 0.0.0.0 --port 8000
 ```
@@ -92,6 +94,44 @@ Lub użyj skryptu pomocniczego:
 ```bash
 ./run_sse.sh              # uruchomi na localhost:8000
 ./run_sse.sh 0.0.0.0 8080 # uruchomi na 0.0.0.0:8080
+```
+
+**Uruchomienie w tle z uv:**
+
+```bash
+# Uruchom w tle
+./run_sse_uv.sh              # uruchomi na localhost:8000
+./run_sse_uv.sh 0.0.0.0 8080 # uruchomi na 0.0.0.0:8080
+
+# Sprawdź status
+./status_sse.sh
+
+# Zatrzymaj serwer
+./stop_sse.sh
+
+# Zobacz logi
+tail -f mcp-server.log
+```
+
+**Uruchomienie jako usługa systemd:**
+
+```bash
+# Edytuj ścieżki w pliku bdl-mcp-server.service
+sudo nano bdl-mcp-server.service
+
+# Skopiuj do systemd
+sudo cp bdl-mcp-server.service /etc/systemd/system/
+
+# Włącz i uruchom
+sudo systemctl daemon-reload
+sudo systemctl enable bdl-mcp-server
+sudo systemctl start bdl-mcp-server
+
+# Sprawdź status
+sudo systemctl status bdl-mcp-server
+
+# Zobacz logi
+sudo journalctl -u bdl-mcp-server -f
 ```
 
 Parametry:
