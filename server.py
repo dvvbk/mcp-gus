@@ -978,7 +978,19 @@ async def main_stdio():
 
 def create_sse_app():
     """Create Starlette app for SSE transport"""
+    from starlette.responses import JSONResponse
+
     sse_transport = SseServerTransport("/messages")
+
+    async def handle_health(scope, receive, send):
+        """Health check endpoint"""
+        response = JSONResponse({
+            "status": "ok",
+            "service": "bdl-mcp-server",
+            "version": "0.1.0",
+            "transport": "sse"
+        })
+        await response(scope, receive, send)
 
     async def handle_sse(scope, receive, send):
         """Handle SSE endpoint"""
@@ -1001,6 +1013,8 @@ def create_sse_app():
     app = Starlette(
         debug=True,
         routes=[
+            Route("/", endpoint=handle_health),
+            Route("/health", endpoint=handle_health),
             Route("/sse", endpoint=handle_sse),
             Route("/messages", endpoint=handle_messages, methods=["POST"]),
         ],
@@ -1040,7 +1054,23 @@ def main():
         import uvicorn
         logger.info(f"Starting BDL MCP Server (SSE) on {args.host}:{args.port}...")
         app = create_sse_app()
-        uvicorn.run(app, host=args.host, port=args.port)
+
+        # Konfiguracja uvicorn zoptymalizowana dla SSE
+        uvicorn.run(
+            app,
+            host=args.host,
+            port=args.port,
+            # Długie timeouty dla SSE (ważne dla Cloudflare Tunnel)
+            timeout_keep_alive=75,
+            # HTTP/1.1 implementation
+            http="h11",
+            # Single worker (MCP wymaga single instance)
+            workers=1,
+            # Logi
+            log_level="info",
+            # Bez auto-reload w produkcji
+            reload=False,
+        )
 
 
 if __name__ == "__main__":

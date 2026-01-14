@@ -188,6 +188,28 @@ tail -f /var/log/bdl-mcp-server.log
 
 Zobacz **DEPLOYMENT.md** dla szczegółów o Alpine Linux.
 
+### Udostępnianie przez Internet (Cloudflare Tunnel)
+
+Jeśli chcesz udostępnić serwer przez Internet, użyj Cloudflare Tunnel:
+
+```bash
+# 1. Uruchom serwer lokalnie
+python server.py --transport sse --host 127.0.0.1 --port 8000
+
+# 2. Uruchom Cloudflare Tunnel (quick tunnel)
+cloudflared tunnel --url http://localhost:8000
+
+# Otrzymasz URL: https://xxx.trycloudflare.com
+```
+
+**⚠️ Ważne dla SSE**: Cloudflare wymaga specjalnej konfiguracji dla długotrwałych połączeń.
+
+Zobacz **CLOUDFLARE-TUNNEL.md** dla:
+- Konfiguracji Named Tunnel
+- Optymalizacji dla SSE
+- Troubleshooting błędów połączeń
+- Alternatywnych rozwiązań (ngrok, Tailscale)
+
 ### Konfiguracja w Claude Desktop
 
 Dodaj do pliku konfiguracyjnego Claude Desktop (`claude_desktop_config.json`):

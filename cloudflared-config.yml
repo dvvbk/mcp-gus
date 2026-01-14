@@ -1,0 +1,50 @@
+# Cloudflare Tunnel Configuration dla BDL MCP Server
+# Ten plik konfiguruje cloudflared do prawidłowej obsługi SSE (Server-Sent Events)
+
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /path/to/YOUR_TUNNEL_CREDENTIALS.json
+
+# Ingress rules - routing ruchu
+ingress:
+  # Przekieruj cały ruch do lokalnego serwera MCP
+  - hostname: your-domain.trycloudflare.com
+    service: http://localhost:8000
+    originRequest:
+      # KRYTYCZNE dla SSE: wyłącz buforowanie chunked transfer
+      disableChunkedEncoding: false
+      # Zwiększ timeouty dla długotrwałych połączeń SSE
+      noTLSVerify: false
+      # HTTP/2 dla lepszej wydajności
+      http2Origin: true
+      # Keepalive dla długich połączeń
+      keepAliveConnections: 100
+      keepAliveTimeout: 90s
+      # Timeouty
+      connectTimeout: 30s
+      tlsTimeout: 10s
+      tcpKeepAlive: 30s
+      # Bez kompresji dla SSE
+      noHappyEyeballs: false
+      # Dla SSE ważne jest by nie było timeoutu idle
+      httpHostHeader: your-domain.trycloudflare.com
+
+  # Catch-all rule (wymagane)
+  - service: http_status:404
+
+# Opcje tunelu
+# Liczba połączeń do Cloudflare edge
+# Zwiększ dla lepszej dostępności
+replicas: 2
+
+# Loglevel dla debugowania
+# Zmień na 'info' w produkcji
+loglevel: debug
+
+# Protocol - preferuj HTTP/2 lub QUIC
+protocol: quic
+
+# Retry dla połączeń
+retries: 5
+
+# Grace period przy zamykaniu
+grace-period: 30s
