@@ -978,9 +978,12 @@ async def main_stdio():
 
 def create_sse_app():
     """Create Starlette app for SSE transport"""
-    from starlette.responses import JSONResponse, Response
+    from starlette.responses import JSONResponse, Response, StreamingResponse
     from starlette.requests import Request
+    from starlette.middleware import Middleware
+    from starlette.middleware.cors import CORSMiddleware
 
+    # Stwórz SSE transport - obsługuje /sse i /messages automatycznie
     sse_transport = SseServerTransport("/messages")
 
     async def handle_health(request: Request):
@@ -994,7 +997,6 @@ def create_sse_app():
 
     async def handle_sse_test(request: Request):
         """Test SSE endpoint - sprawdza czy SSE działa przez proxy/tunnel"""
-        from starlette.responses import StreamingResponse
         import asyncio
 
         async def event_generator():
@@ -1010,12 +1012,13 @@ def create_sse_app():
             headers={
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",  # Wyłącz buforowanie w nginx
+                "X-Accel-Buffering": "no",
             }
         )
 
-    async def handle_sse(request: Request):
-        """Handle SSE endpoint - MCP protocol"""
+    async def handle_sse_mcp(request: Request):
+        """Handle both /sse (GET) and /messages (POST) through MCP SSE transport"""
+        # SseServerTransport obsługuje routing wewnętrznie
         async with sse_transport.connect_sse(
             request.scope,
             request.receive,
@@ -1026,29 +1029,32 @@ def create_sse_app():
                 streams[1],
                 server.create_initialization_options()
             )
-        return Response()
+        # Dla SSE nie zwracamy Response - połączenie jest trzymane otwarte
+        # Dla POST /messages - zwróć pustą odpowiedź
+        if request.method == "POST":
+            return Response()
 
-    async def handle_messages(request: Request):
-        """Handle messages endpoint"""
-        async with sse_transport.connect_messages(
-            request.receive,
-            request._send
-        ) as streams:
-            await server.run(
-                streams[0],
-                streams[1],
-                server.create_initialization_options()
-            )
-        return Response()
+    # Middleware CORS dla SSE
+    middleware = [
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["*"],
+        )
+    ]
 
     app = Starlette(
         debug=True,
         routes=[
             Route("/", endpoint=handle_health),
             Route("/health", endpoint=handle_health),
-            Route("/sse", endpoint=handle_sse),
-            Route("/messages", endpoint=handle_messages, methods=["POST"]),
+            Route("/sse-test", endpoint=handle_sse_test),
+            # MCP SSE endpoints - obsługują zarówno /sse jak i /messages
+            Route("/sse", endpoint=handle_sse_mcp),
+            Route("/messages", endpoint=handle_sse_mcp, methods=["POST"]),
         ],
+        middleware=middleware,
     )
 
     return app
