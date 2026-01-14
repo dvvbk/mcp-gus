@@ -978,37 +978,46 @@ async def main_stdio():
 
 def create_sse_app():
     """Create Starlette app for SSE transport"""
-    from starlette.responses import JSONResponse
+    from starlette.responses import JSONResponse, Response
+    from starlette.requests import Request
 
     sse_transport = SseServerTransport("/messages")
 
-    async def handle_health(scope, receive, send):
+    async def handle_health(request: Request):
         """Health check endpoint"""
-        response = JSONResponse({
+        return JSONResponse({
             "status": "ok",
             "service": "bdl-mcp-server",
             "version": "0.1.0",
             "transport": "sse"
         })
-        await response(scope, receive, send)
 
-    async def handle_sse(scope, receive, send):
+    async def handle_sse(request: Request):
         """Handle SSE endpoint"""
-        async with sse_transport.connect_sse(scope, receive, send) as streams:
+        async with sse_transport.connect_sse(
+            request.scope,
+            request.receive,
+            request._send
+        ) as streams:
             await server.run(
                 streams[0],
                 streams[1],
                 server.create_initialization_options()
             )
+        return Response()
 
-    async def handle_messages(scope, receive, send):
+    async def handle_messages(request: Request):
         """Handle messages endpoint"""
-        async with sse_transport.connect_messages(receive, send) as streams:
+        async with sse_transport.connect_messages(
+            request.receive,
+            request._send
+        ) as streams:
             await server.run(
                 streams[0],
                 streams[1],
                 server.create_initialization_options()
             )
+        return Response()
 
     app = Starlette(
         debug=True,
